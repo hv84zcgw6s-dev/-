@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>食器貸出記録</title>
+
+<!-- PWA / iPad向け設定 -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="食器貸出記録">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+:root{--bg:#eef3f4;--sf:#fff;--ink:#17313a;--mute:#5d737b;--line:#cfdadd;--ac:#0e7c86;--acink:#fff;--warn:#b4430c;--ok:#1b7a43;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;font-size:17px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1c21;--sf:#16272d;--ink:#e3eef0;--mute:#93aab1;--line:#2a4048;--ac:#3cb7c3;--acink:#0a1a1e;--warn:#f08a54;--ok:#5fcf8c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1c21;--sf:#16272d;--ink:#e3eef0;--mute:#93aab1;--line:#2a4048;--ac:#3cb7c3;--acink:#0a1a1e;--warn:#f08a54;--ok:#5fcf8c;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.6 "Hiragino Sans","Yu Gothic","Meiryo",sans-serif}
+main{max-width:920px;margin:0 auto;padding:12px}
+h2{font-size:1.05rem;margin:0 0 8px}
+section{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+.hide{display:none}
+.mute{color:var(--mute);font-size:.82rem}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:2px}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%}
+input:focus-visible,button:focus-visible,textarea:focus-visible{outline:3px solid var(--ac);outline-offset:1px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--ac);background:transparent;color:var(--ac);padding:10px 14px;min-height:44px}
+button.p{background:var(--ac);color:var(--acink);font-weight:700}
+button:disabled{opacity:.55;cursor:not-allowed}
+.link{border:0;padding:4px;min-height:0;color:var(--ac);text-decoration:underline}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+#tabs button{min-height:52px;font-weight:700;font-size:1.05rem}
+.gb{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px}
+.ib{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px}
+.gbtn,.ibtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--sf);color:var(--ink);border:2px solid var(--line);font-weight:700;text-align:center}
+.gbtn{min-height:68px;padding:8px;font-size:1.05rem}
+.ibtn{min-height:84px;font-size:1.25rem;border-radius:12px}
+.gbtn small,.ibtn small{font-weight:400;font-size:.8rem;color:var(--mute)}
+.on{background:var(--ac);color:var(--acink);border-color:var(--ac)}
+.on small{color:var(--acink)}
+.ibtn.full:not(.on){border-color:var(--warn)}
+
+.bar{position:sticky;bottom:0;background:var(--bg);padding:8px 0;z-index:5}
+
+#msgContainer{
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 10;
+  padding-bottom: 6px;
+}
+#msg{
+  pointer-events: auto;
+}
+
+.ovw{display:flex;flex-direction:column;gap:8px;color:var(--ink);font-size:1rem;font-weight:700;border:2px solid var(--warn);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--sf)}
+.ovw.hide{display:none}
+.ovw-check{display:flex;gap:10px;align-items:center}
+.ovw-check input{width:28px;height:28px;flex:none;padding:0}
+.src-select{display:flex;gap:8px;align-items:center;margin-top:4px;font-size:.9rem;font-weight:400}
+.src-select select{padding:6px;width:auto;flex:1}
+#rec.over{background:var(--warn);border-color:var(--warn)}
+#rec{width:100%;min-height:66px;font-size:1.2rem}
+.flash{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--ok);color:var(--acink);padding:10px 14px;border-radius:10px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.flash button{color:inherit;border-color:currentColor}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+.bad{color:var(--warn);font-weight:700}
+.al{width:5em;text-align:center;padding:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.it{border:1px solid var(--line);border-radius:8px;padding:10px}
+#ed label{margin-top:8px}
+#dlg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px;z-index:9}
+tr.tot-row{background:rgba(14,124,134,0.08);font-weight:700;border-top:2px solid var(--line)}
+</style>
+</head>
+<body>
+<main>
+<nav id="tabs"><button id="t1">貸し出す</button><button id="t2">結果を見る</button><button id="t3">設定</button></nav>
+
+<div id="p1">
+<section>
+<h2>① 団体を選ぶ</h2>
+<div id="gpick">
+<input id="gs" placeholder="団体名で絞り込み" autocomplete="off">
+<div id="gb" class="gb"></div>
+</div>
+</section>
+<section>
+<h2>② 貸す食器を選ぶ</h2>
+<div id="ib" class="ib"></div>
+<input id="n" placeholder="メモ(箱番号など・省略可)" autocomplete="off">
+</section>
+
+<div class="bar">
+  <div id="msgContainer"><div id="msg" role="status"></div></div>
+  <div id="ovw" class="ovw hide">
+    <label class="ovw-check"><input type="checkbox" id="ovc">申請枠を超えています。貸出を継続します</label>
+    <div id="srcBox" class="src-select hide">
+      <span>充当区分:</span>
+      <select id="srcSel"></select>
+    </div>
+  </div>
+  <button class="p" id="rec">① 団体を選んでください</button>
+</div>
+
+<section>
+<h2>直近の記録</h2>
+<div class="scroll"><table id="hr"></table></div>
+</section>
+</div>
+
+<div id="p2" class="hide">
+<section>
+<h2>団体ごとの貸出状況 (貸出数 / 申請枠)</h2>
+<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:1rem"><input type="checkbox" id="oo" style="width:auto">貸出済みの団体だけ表示</label>
+<div class="scroll" style="margin-top:8px"><table id="bt"></table></div>
+<p class="mute">申請枠を超えた貸出は赤字で表示されます。</p>
+</section>
+<section>
+<h2>食器ごとの全体集計 (全体残り箱数・予備残り)</h2>
+<div class="scroll"><table id="it"></table></div>
+</section>
+<section>
+<h2>履歴(すべて)</h2>
+<div class="scroll"><table id="ht"></table></div>
+</section>
+</div>
+
+<div id="p3" class="hide">
+<section>
+<h2>団体を追加</h2>
+<textarea id="gi" rows="3" placeholder="団体名を入力(改行で区切ると、まとめて追加できます)"></textarea>
+<div class="row" style="margin-top:8px"><button class="p" id="ga">追加する</button></div>
+</section>
+<section>
+<h2>① 各団体の申請箱数 (事前枠)</h2>
+<p class="mute">団体ごとに事前に申請された箱数を設定します。最下行に合計が表示されます。</p>
+<div class="scroll"><table id="gt"></table></div>
+</section>
+<section>
+<h2>② 予備借り箱数の設定（既存食器）</h2>
+<p class="mute">申請分とは別に、各食器ごとに予備として借りている箱数を調整・変更できます。</p>
+<div class="grid" id="is"></div>
+</section>
+<section>
+<h2>③ 新しい食器の種類を追加</h2>
+<p class="mute">新しい食器をシステムに追加登録します。</p>
+<div class="row">
+  <input id="ni" placeholder="新食器名 (例: お椀)" style="flex:2;min-width:150px">
+  <input id="ns" type="number" min="0" placeholder="初期の予備箱数" style="flex:1;min-width:110px">
+  <button id="na" class="p">食器を追加</button>
+</div>
+</section>
+<section>
+<h2>データの保存・復元（バックアップ）</h2>
+<p class="mute">記録内容をテキスト形式として保存・復元できます。</p>
+<div class="row">
+  <button class="p" id="bk">保存用コードを生成</button>
+  <button id="rs">下のコードを読み込んで復元</button>
+  <button id="csv">CSVを表示</button>
+</div>
+<textarea id="ta" rows="6" placeholder="ここに保存用コードが表示されます。" style="margin-top:8px;font-family:monospace;font-size:0.85rem;"></textarea>
+</section>
+</div>
+</main>
+
+<div id="ed" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px;z-index:9" role="dialog" aria-modal="true"><div style="background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto"><h2>記録を編集</h2>
+<label>団体</label><select id="eg"></select>
+<label>食器</label><select id="ei"></select>
+<label>箱数</label><input id="eq" type="number" min="1" inputmode="numeric">
+<label>日時</label><input id="et" type="datetime-local" step="1">
+<label>メモ</label><input id="en" autocomplete="off">
+<div class="row" style="justify-content:flex-end;margin-top:14px"><button id="ec">キャンセル</button><button class="p" id="es">保存</button></div></div></div>
+
+<div id="dlg" role="dialog" aria-modal="true"><div style="background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:16px;max-width:420px;width:100%"><p id="dm" style="margin-top:0"></p><input id="di" style="display:none;margin-bottom:12px" autocomplete="off"><div class="row" style="justify-content:flex-end"><button id="dn">やめる</button><button class="p" id="dy">OK</button></div></div></div>
+
+<script>
+// PWA Service Worker 登録
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW reg failed: ', err));
+  });
+}
+
+const KEY="tableware-v1";
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.items)S={items:["大角皿","小角皿","小カップ","大カップ"],stock:{},tx:[],groups:[]};
+function norm(){S.stock=S.stock||{};S.groups=S.groups||[];S.lim2=S.lim2||{};S.tx=(S.tx||[]).filter(t=>t.type==="lend");S.tx.forEach(t=>{if(!S.groups.includes(t.g))S.groups.push(t.g)})}
+norm();
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const TF={month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"};
+const now=()=>new Date().toLocaleString("ja-JP",TF);
+const fmtAt=t=>{const d=new Date(t.id);return isNaN(d)?t.at:d.toLocaleString("ja-JP",TF)};
+
+const cnt=(g,i)=>S.tx.reduce((a,t)=>{
+  if(t.g===g) return a + (t.q[i]||0);
+  return a;
+},0);
+
+const tot=g=>S.items.reduce((a,i)=>a+cnt(g,i),0);
+const lim=(g,i)=> (S.lim2[g] && S.lim2[g][i] !== undefined && S.lim2[g][i] !== "") ? Number(S.lim2[g][i]) : 0;
+
+let sel=null,grp="",filter="",last=null,onlyLent=false,isProcessing=false;
+
+function ask(m,okOnly){return new Promise(r=>{$("dm").textContent=m;$("di").style.display="none";$("dn").style.display=okOnly?"none":"";$("dlg").style.display="flex";$("dy").focus();const f=v=>{$("dlg").style.display="none";$("dy").onclick=$("dn").onclick=null;r(v)};$("dy").onclick=()=>f(true);$("dn").onclick=()=>f(false)})}
+function askName(init,msg){return new Promise(r=>{const di=$("di");$("dm").textContent=msg;di.style.display="";di.value=init;$("dn").style.display="";$("dlg").style.display="flex";di.focus();di.select();const f=v=>{$("dlg").style.display="none";di.style.display="none";$("dy").onclick=$("dn").onclick=di.onkeydown=null;r(v)};$("dy").onclick=()=>f(di.value.trim());$("dn").onclick=()=>f(null);di.onkeydown=e=>{if(e.isComposing||e.keyCode===229)return;if(e.key==="Enter")f(di.value.trim());if(e.key==="Escape")f(null)}})}
+let flashT=null;
+function flash(t,undo){clearTimeout(flashT);$("msg").innerHTML=`<div class="flash"><span>${esc(t)}</span>${undo?`<button id="undo">元に戻す</button>`:""}</div>`;flashT=setTimeout(()=>{$("msg").innerHTML=""},1800)}
+
+const histRows=l=>l.length?l.map(t=>`<tr><td class="mute">${esc(fmtAt(t))}</td><td style="text-align:left">${esc(t.g)}</td><td style="text-align:left">${Object.keys(t.q).map(i=>esc(i)+" "+t.q[i]).join("、")}${t.note?" ("+esc(t.note)+")":""}</td><td><button class="link" data-edit="${t.id}">編集</button> <button class="link" data-del="${t.id}">取り消し</button></td></tr>`).join(""):`<tr><td>まだ記録がありません。</td></tr>`;
+
+function updateSrcSelect(){
+  if(!sel)return;
+  const selEl=$("srcSel");
+  const prevVal = selEl.value;
+  const otherGroups=S.groups.filter(g=>g!==grp);
+  let opts=`<option value="__reserve__">【予備枠】から使用</option>`;
+  let count=0;
+  otherGroups.forEach(g=>{
+    const c=cnt(g,sel), l=lim(g,sel);
+    const avail=l-c;
+    if(avail > 0){
+      opts += `<option value="${esc(g)}">【他団体：${esc(g)}】から融通 (残枠:${avail}箱)</option>`;
+      count++;
+    }
+  });
+  if(count===0){
+    opts += `<option value="" disabled>※融通できる余りのある他団体はありません</option>`;
+  }
+  selEl.innerHTML=opts;
+  if(prevVal && selEl.querySelector(`option[value="${CSS.escape(prevVal)}"]`)){
+    selEl.value = prevVal;
+  }
+}
+
+function renderLend(){
+  if(grp&&!S.groups.includes(grp))grp="";
+  if(sel&&!S.items.includes(sel))sel=null;
+  const gbtn=n=>`<button class="gbtn${n===grp?" on":""}" data-g="${esc(n)}">${esc(n)}<small>計${tot(n)}箱</small></button>`;
+  const gs=S.groups.filter(n=>n.includes(filter));
+  $("gb").innerHTML=gs.length?gs.map(gbtn).join(""):`<p class="mute">該当する団体がありません。「設定」で団体を追加してください。</p>`;
+  $("ib").innerHTML=S.items.map(i=>{const c=grp?cnt(grp,i):0,l=grp?lim(grp,i):0,full=grp&&c>=l;return `<button class="ibtn${sel===i?" on":""}${full?" full":""}" data-i="${esc(i)}"><span>${esc(i)}</span><small>${grp?"貸出済み "+c+" / 申請 "+l+(full?"(上限)":""):""}</small></button>`}).join("");
+  const l=grp&&sel?lim(grp,sel):0,over=!!grp&&!!sel&&cnt(grp,sel)>=l;
+  $("ovw").classList.toggle("hide",!over);
+  if(!over){
+    $("ovc").checked=false;
+    $("srcBox").classList.add("hide");
+  } else {
+    updateSrcSelect();
+    $("srcBox").classList.toggle("hide", !$("ovc").checked);
+  }
+  const r=$("rec");
+  r.disabled=isProcessing||!(grp&&sel)||(over&&!$("ovc").checked);
+  r.classList.toggle("over",over);
+  r.textContent=!grp?"① 団体を選んでください":!sel?"② 貸す食器を選んでください":over&&!$("ovc").checked?"上の確認にチェックを入れてください":`${grp} に ${sel} を貸し出す${over?"(申請枠超過)":""}`;
+  $("hr").innerHTML=histRows(S.tx.slice(-5).reverse());
+}
+
+function renderRes(){
+  const gs=S.groups.filter(n=>!onlyLent||tot(n)>0);
+  $("bt").innerHTML=gs.length?`<tr><th>団体</th>${S.items.map(i=>`<th>${esc(i)}</th>`).join("")}</tr>`+gs.map(n=>`<tr><td>${esc(n)}</td>${S.items.map(i=>{const c=cnt(n,i),l=lim(n,i);return `<td class="${c>l?"bad":""}">${c} / ${l}</td>`}).join("")}</tr>`).join(""):`<tr><td>表示する団体がありません。</td></tr>`;
+  
+  $("it").innerHTML=`<tr><th>食器名</th><th>申請合計</th><th>予備枠</th><th>全体総枠</th><th>貸出数合計</th><th>全体の残り箱数</th><th>予備の残り</th></tr>`+S.items.map(i=>{
+    const totalApp = S.groups.reduce((a,n)=>a+lim(n,i),0);
+    const reserveStock = S.stock[i] || 0;
+    const grandTotal = totalApp + reserveStock;
+    
+    const totalLent = S.tx.filter(t=>!t.note || !t.note.includes("へ融通")).reduce((a,t)=>a+(t.q[i]||0),0);
+    const totalLeft = grandTotal - totalLent;
+    
+    const reserveUsed = S.tx.filter(t=>t.q[i] && t.note && t.note.includes("[予備より貸出]")).reduce((a,t)=>a+(t.q[i]||0),0);
+    const reserveLeft = reserveStock - reserveUsed;
+    
+    return `<tr><td><b>${esc(i)}</b></td><td>${totalApp}</td><td>${reserveStock}</td><td><b>${grandTotal}</b></td><td>${totalLent}</td><td class="${totalLeft<0?"bad":""}"><b>${totalLeft}</b></td><td class="${reserveLeft<0?"bad":""}">${reserveLeft}</td></tr>`;
+  }).join("");
+  
+  $("ht").innerHTML=histRows(S.tx.slice().reverse());
+}
+
+function renderSet(){
+  let html = S.groups.length ? `<tr><th>団体</th>${S.items.map(i=>`<th>${esc(i)}</th>`).join("")}<th></th></tr>` : `<tr><td>まだ団体がありません。上で追加してください。</td></tr>`;
+  
+  if(S.groups.length){
+    html += S.groups.map(n=>`<tr><td>${esc(n)}</td>${S.items.map(i=>`<td><input class="al" type="number" min="0" inputmode="numeric" data-lg="${esc(n)}" data-li="${esc(i)}" value="${lim(n,i)}" aria-label="${esc(n)} ${esc(i)} 上限"></td>`).join("")}<td><button class="link" data-rng="${esc(n)}">名前変更</button> <button class="link" data-rmg="${esc(n)}">削除</button></td></tr>`).join("");
+    
+    html += `<tr class="tot-row"><td>申請箱数 合計</td>${S.items.map(i=>{
+      const sum = S.groups.reduce((a,n)=>a+lim(n,i),0);
+      return `<td style="text-align:center">${sum}</td>`;
+    }).join("")}<td></td></tr>`;
+  }
+  
+  $("gt").innerHTML = html;
+  $("is").innerHTML=S.items.map(i=>`<div class="it"><b>${esc(i)}</b><label>予備借り数(箱)</label><input type="number" min="0" inputmode="numeric" data-st="${esc(i)}" value="${S.stock[i]||0}"><div style="margin-top:6px"><button class="link" data-rni="${esc(i)}">名前変更</button> <button class="link" data-rm="${esc(i)}">削除</button></div></div>`).join("");
+}
+const renderAll=()=>{renderLend();renderRes();renderSet()};
+
+async function doLend(){
+  if(isProcessing || !grp || !sel) return;
+  const l=lim(grp,sel);
+  const isOver = cnt(grp,sel)>=l;
+  if(isOver && !$("ovc").checked)return;
+
+  isProcessing = true;
+  $("rec").disabled = true;
+
+  let note = $("n").value.trim();
+  const timestamp = Date.now();
+  const timeStr = now();
+
+  if(isOver){
+    const src = $("srcSel").value;
+    if(!src){
+      isProcessing = false;
+      renderLend();
+      return;
+    }
+    
+    if(src === "__reserve__"){
+      note += (note ? " " : "") + "[予備より貸出]";
+      S.tx.push({id:timestamp, at:timeStr, g:grp, type:"lend", q:{[sel]:1}, note:note});
+    } else {
+      note += (note ? " " : "") + `[${src}より融通]`;
+      S.tx.push({id:timestamp, at:timeStr, g:grp, type:"lend", q:{[sel]:1}, note:note});
+      S.tx.push({id:timestamp+1, at:timeStr, g:src, type:"lend", q:{[sel]:1}, note:`[${grp}へ融通]`});
+    }
+  } else {
+    S.tx.push({id:timestamp, at:timeStr, g:grp, type:"lend", q:{[sel]:1}, note:note});
+  }
+
+  last=timestamp;save();$("n").value="";$("ovc").checked=false;
+  flash(`${grp} に ${sel} を貸し出しました(計${cnt(grp,sel)}箱)`,true);
+
+  setTimeout(()=>{
+    isProcessing = false;
+    renderAll();
+  }, 300);
+}
+
+function tab(n){[1,2,3].forEach(k=>{$("p"+k).classList.toggle("hide",k!==n);$("t"+k).classList.toggle("p",k===n)});renderAll();scrollTo(0,0)}
+[1,2,3].forEach(k=>$("t"+k).onclick=()=>tab(k));
+$("rec").onclick=doLend;
+$("gs").oninput=e=>{filter=e.target.value.trim();renderLend()};
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+  if(b.id==="undo"){S.tx=S.tx.filter(t=>t.id!==last && t.id!==(last+1));last=null;save();renderAll();flash("取り消しました。");return}
+  if(d.g!==undefined){grp=d.g;$("msg").innerHTML="";renderLend()}
+  if(d.i!==undefined){sel=sel===d.i?null:d.i;$("msg").innerHTML="";renderLend()}
+  if(d.edit)openEdit(d.edit);
+  if(d.del)ask("この記録を取り消しますか?").then(ok=>{if(ok){S.tx=S.tx.filter(t=>String(t.id)!==d.del);save();renderAll()}});
+  if(d.rmg){const k=S.tx.filter(t=>t.g===d.rmg).length;ask(k?`「${d.rmg}」を削除します。この団体の記録${k}件も消えます。よろしいですか?`:`「${d.rmg}」を削除しますか?`).then(ok=>{if(ok){S.groups=S.groups.filter(x=>x!==d.rmg);S.tx=S.tx.filter(t=>t.g!==d.rmg);delete S.lim2[d.rmg];save();renderAll()}})}
+  if(d.rng)askName(d.rng,"新しい団体名を入力してください").then(v=>{if(!v||v===d.rng)return;if(S.groups.includes(v)){ask("同じ名前の団体がすでにあります。",true);return}S.groups=S.groups.map(x=>x===d.rng?v:x);S.tx.forEach(t=>{if(t.g===d.rng)t.g=v});if(S.lim2[d.rng]){S.lim2[v]=S.lim2[d.rng];delete S.lim2[d.rng]}if(grp===d.rng)grp=v;save();renderAll()});
+  if(d.rm){const k=S.tx.filter(t=>t.q[d.rm]).length;ask(k?`「${d.rm}」を削除します。この食器の記録${k}件も消えます。よろしいですか?`:`「${d.rm}」を削除しますか?`).then(ok=>{if(ok){S.items=S.items.filter(i=>i!==d.rm);S.tx.forEach(t=>{delete t.q[d.rm]});S.tx=S.tx.filter(t=>Object.keys(t.q).length);delete S.stock[d.rm];Object.values(S.lim2).forEach(a=>{delete a[d.rm]});save();renderAll()}})}
+  if(d.rni)askName(d.rni,"新しい食器名を入力してください").then(v=>{if(!v||v===d.rni)return;if(S.items.includes(v)){ask("同じ名前の食器がすでにあります。",true);return}S.items=S.items.map(x=>x===d.rni?v:x);S.tx.forEach(t=>{if(t.q[d.rni]){t.q[v]=t.q[d.rni];delete t.q[d.rni]}});if(S.stock[d.rni]!==undefined){S.stock[v]=S.stock[d.rni];delete S.stock[d.rni]}Object.values(S.lim2).forEach(a=>{if(a[d.rni]!==undefined){a[v]=a[d.rni];delete a[d.rni]}});save();renderAll()});
+});
+
+document.addEventListener("change",e=>{
+  const d=e.target.dataset,v=parseInt(e.target.value,10);
+  if(d.lg!==undefined){(S.lim2[d.lg]=S.lim2[d.lg]||{})[d.li]=isNaN(v)?0:v;save();renderAll()}
+  if(d.st!==undefined){S.stock[d.st]=isNaN(v)?0:v;save();renderAll()}
+  if(e.target.id==="oo"){onlyLent=e.target.checked;renderRes()}
+  if(e.target.id==="ovc"){
+    $("srcBox").classList.toggle("hide", !e.target.checked);
+    const l=lim(grp,sel), over=cnt(grp,sel)>=l;
+    const r=$("rec");
+    r.disabled=isProcessing||!(grp&&sel)||(over&&!e.target.checked);
+    r.textContent=!grp?"① 団体を選んでください":!sel?"② 貸す食器を選んでください":over&&!e.target.checked?"上の確認にチェックを入れてください":`${grp} に ${sel} を貸し出す${over?"(申請枠超過)":""}`;
+  }
+});
+
+$("ga").onclick=()=>{
+  const ns=$("gi").value.split(/\n/).map(s=>s.trim()).filter(Boolean);let add=0;
+  ns.forEach(n=>{if(!S.groups.includes(n)){S.groups.push(n);add++}});
+  $("gi").value="";save();renderAll();
+  if(ns.length&&add<ns.length)ask(`${add}件を追加しました。同じ名前の${ns.length-add}件は追加していません。`,true);
+};
+$("na").onclick=()=>{
+  const v=$("ni").value.trim();if(!v)return;
+  if(S.items.includes(v)){ask("同じ名前の食器がすでにあります。",true);return}
+  S.items.push(v);const n=parseInt($("ns").value,10);S.stock[v]=isNaN(n)?0:n;
+  $("ni").value="";$("ns").value="";save();renderAll();
+};
+$("csv").onclick=()=>{
+  const rows=[["日時","団体",...S.items,"メモ"]].concat(S.tx.map(t=>[fmtAt(t),t.g,...S.items.map(i=>t.q[i]||0),t.note||""]));
+  $("ta").value=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");$("ta").select();
+};
+$("bk").onclick=()=>{
+  $("ta").value=JSON.stringify(S);
+  $("ta").select();
+  ask("保存用コードを生成しました。コードをコピーして保存してください。", true);
+};
+$("rs").onclick=async()=>{
+  const val = $("ta").value.trim();
+  if(!val){ask("復元するコードを貼り付けてください。", true);return;}
+  try{
+    const d=JSON.parse(val);
+    if(!d.items||!d.tx)throw 0;
+    if(await ask("貼り付けたコードから復元しますか?")){
+      S=d;norm();save();renderAll();
+      ask("正常に復元しました！", true);
+    }
+  }catch(e){
+    ask("読み込めませんでした。コードを確認してください。",true);
+  }
+};
+
+let editId=null;
+const toLocalInput=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`};
+function closeEdit(){$("ed").style.display="none";editId=null}
+function openEdit(id){
+  const t=S.tx.find(x=>String(x.id)===id);if(!t)return;editId=t.id;const ks=Object.keys(t.q);
+  $("eg").innerHTML=S.groups.map(n=>`<option>${esc(n)}</option>`).join("");$("eg").value=t.g;
+  $("ei").innerHTML=S.items.map(i=>`<option>${esc(i)}</option>`).join("");
+  if(ks.length===1){$("ei").value=ks[0];$("eq").value=t.q[ks[0]]}else $("eq").value="";
+  $("ei").disabled=$("eq").disabled=ks.length!==1;
+  $("et").value=toLocalInput(t.id);$("en").value=t.note||"";
+  $("ed").style.display="flex";
+}
+$("ec").onclick=closeEdit;
+$("es").onclick=()=>{
+  const t=S.tx.find(x=>x.id===editId);if(!t){closeEdit();return}
+  t.g=$("eg").value;
+  if(Object.keys(t.q).length===1)t.q={[$("ei").value]:Math.max(1,parseInt($("eq").value,10)||1)};
+  t.note=$("en").value.trim();
+  const ms=new Date($("et").value).getTime();
+  if(!isNaN(ms)&&ms!==t.id){let m=ms;while(S.tx.some(x=>x!==t&&x.id===m))m++;if(last===t.id)last=m;t.id=m;t.at=new Date(m).toLocaleString("ja-JP",TF)}
+  S.tx.sort((a,b)=>a.id-b.id);save();closeEdit();renderAll();
+};
+tab(1);
+</script>
+</body>
+</html>
